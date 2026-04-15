@@ -1,0 +1,14 @@
+{
+  "name": "skip-booking-system",
+  "version": "1.0.0",
+  "description": "QA Assessment - Skip Booking System",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"No tests configured\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
