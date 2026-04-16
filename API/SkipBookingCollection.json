@@ -1,0 +1,252 @@
+{
+  "info": {
+    "_postman_id": "44a05549-f4ee-41bf-87ef-38efa63ec403",
+    "name": "Skip Booking System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "40334665",
+    "_collection_link": "https://go.postman.co/collection/40334665-44a05549-f4ee-41bf-87ef-38efa63ec403?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Postcode Lookup",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.test(\"Request body is sent\", function () {\r",
+              "    pm.expect(pm.request.body).to.exist;\r",
+              "    pm.expect(pm.request.body.raw).to.not.be.empty;\r",
+              "});\r",
+              "\r",
+              "var  body = JSON.parse(pm.request.body.raw);\r",
+              "\r",
+              "pm.test(\"Postcode exists in request body\", function () {\r",
+              "    pm.expect(body).to.have.property(\"postcode\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Postcode is not empty\", function () {\r",
+              "    pm.expect(body.postcode).to.be.a(\"string\").and.not.empty;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var responseBody = pm.response.json();\r",
+              "var postCodeVar = pm.variables.get(\"PostCode\");\r",
+              "\r",
+              "pm.test(\"Response status is 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response postcode matches PostCode variable\", function () {\r",
+              "    pm.expect(responseBody.postcode).to.eql(postCodeVar);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Addresses array exists and is not empty\", function () {\r",
+              "    pm.expect(responseBody.addresses).to.be.an(\"array\").that.is.not.empty;\r",
+              "    pm.environment.set(\"addressId\", responseBody.addresses[0].id);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"postcode\": \"{{PostCode}}\",\r\n    \"retry\": false\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BaseURL}}/postcode/lookup",
+          "host": [
+            "{{BaseURL}}"
+          ],
+          "path": [
+            "postcode",
+            "lookup"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Waste Type",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var responseBody = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Response status is 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"check response body has property ok and it's value is true\", function () {\r",
+              "    pm.expect(responseBody.ok).to.be.true;\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"heavyWaste\": false,\r\n    \"plasterboard\": true,\r\n    \"plasterboardOption\": \"separate\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BaseURL}}/waste-types",
+          "host": [
+            "{{BaseURL}}"
+          ],
+          "path": [
+            "waste-types"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Skip Selection",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var responseBody = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Response status is 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Plasterboard query param is true\", function () {\r",
+              "    const plasterboard = pm.request.url.query.get(\"plasterboard\");\r",
+              "    pm.expect(plasterboard).to.eql(\"true\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Skips array exists and is not empty\", function () {\r",
+              "    pm.expect(responseBody.skips).to.be.an(\"array\").that.is.not.empty;\r",
+              "\r",
+              "    const firstSkip = responseBody.skips[0];\r",
+              "    pm.environment.set(\"SkipSize\", firstSkip.size);\r",
+              "    pm.environment.set(\"SkipPrice\", firstSkip.price);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Disabled flag is correctly applied\", function () {\r",
+              "    const disabledSizes = [\"14-yard\", \"16-yard\", \"20-yard\"];\r",
+              "\r",
+              "    responseBody.skips.forEach(skip => {\r",
+              "        if (disabledSizes.includes(skip.size)) {\r",
+              "            pm.expect(skip.disabled).to.be.true;\r",
+              "        }\r",
+              "    });\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BaseURL}}/skips?postcode={{PostCode}}&plasterboard=true",
+          "host": [
+            "{{BaseURL}}"
+          ],
+          "path": [
+            "skips"
+          ],
+          "query": [
+            {
+              "key": "postcode",
+              "value": "{{PostCode}}"
+            },
+            {
+              "key": "plasterboard",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Booking Confirmation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var responseBody = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Response status is success\", function () {\r",
+              "    pm.expect(responseBody.status).to.eql(\"success\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Booking ID has correct prefix\", function () {\r",
+              "    pm.expect(responseBody.bookingId.startsWith(\"BK-\")).to.be.true;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"postcode\": \"{{PostCode}}\",\r\n    \"addressId\": \"{{addressId}}\",\r\n    \"heavyWaste\": false,\r\n    \"plasterboard\": true,\r\n    \"skipSize\": \"{{SkipSize}}\",\r\n    \"price\": {{SkipPrice}}\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BaseURL}}/booking/confirm",
+          "host": [
+            "{{BaseURL}}"
+          ],
+          "path": [
+            "booking",
+            "confirm"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

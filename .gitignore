@@ -20,3 +20,7 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+
+# code explaination:
+# This .gitignore file is used to specify files and directories that should be ignored by Git when committing changes to the repository.
+CODE_EXPLANATION.md

@@ -102,12 +102,12 @@ Received string:    "4-yard"
   31  |     await step1.selectAddress(0);
   32  |     await step1.clickUseAddress();
   33  | 
-  34  |     await step2.selectWasteType("general");
+  34  |     await step2.selectWasteType(testData.wasteTypes[0]);
   35  |     await step2.clickContinueToStep3();
   36  |     await step2.waitForStep3();
   37  | 
   38  |     await step3.waitForSkips();
-  39  |     await step3.selectSkip("4-yard");
+  39  |     await step3.selectSkip(testData.skipSizes[0]);
   40  |     await step3.clickContinueToStep4();
   41  |     await step3.waitForStep4();
   42  | 
@@ -136,21 +136,21 @@ Received string:    "4-yard"
   64  |     await step1.selectAddress(0);
   65  |     await step1.clickUseAddress();
   66  | 
-  67  |     await step2.selectWasteType("heavy");
+  67  |     await step2.selectWasteType(testData.wasteTypes[1]);
   68  |     await step2.clickContinueToStep3();
   69  |     await step2.waitForStep3();
   70  | 
   71  |     await step3.waitForSkips();
   72  | 
   73  |     // FAIL - 8-yard should be disabled for heavy waste
-  74  |     expect(await step3.isSkipDisabled("8-yard")).toBe(false);
+  74  |     expect(await step3.isSkipDisabled(testData.skipSizes[1])).toBe(true);
   75  | 
-  76  |     await step3.selectSkip("4-yard");
+  76  |     await step3.selectSkip(testData.skipSizes[0]);
   77  |     await step3.clickContinueToStep4();
   78  |     await step3.waitForStep4();
   79  | 
   80  |     const reviewData = await step4.getReviewData();
-  81  |     expect(reviewData.wasteType).toBe("Heavy Waste");
+  81  |     expect(reviewData.wasteType).toBe(testData.wasteTypes[1]);
   82  | 
   83  |     await step4.clickConfirm();
   84  |     await step4.waitForSuccess();
@@ -170,12 +170,12 @@ Received string:    "4-yard"
   98  |     await step1.enterManualAddress("123 Test Street, London");
   99  |     await step1.clickUseManual();
   100 | 
-  101 |     await step2.selectWasteType("general");
+  101 |     await step2.selectWasteType(testData.wasteTypes[0]);
   102 |     await step2.clickContinueToStep3();
   103 |     await step2.waitForStep3();
   104 | 
   105 |     await step3.waitForSkips();
-  106 |     await step3.selectSkip("6-yard");
+  106 |     await step3.selectSkip(testData.skipSizes[0]);
   107 |     await step3.clickContinueToStep4();
   108 |     await step3.waitForStep4();
   109 | 

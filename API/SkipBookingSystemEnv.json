@@ -1,0 +1,40 @@
+{
+	"id": "0964a783-891e-4f30-86f1-242b7a0e5c4a",
+	"name": "Skip booking system dev environment",
+	"values": [
+		{
+			"key": "BaseURL",
+			"value": "http://localhost:3000/api",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "PostCode",
+			"value": "Test",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "addressId",
+			"value": "addr_gen_1",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "SkipSize",
+			"value": "4-yard",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "SkipPrice",
+			"value": "130",
+			"type": "any",
+			"enabled": true
+		}
+	],
+	"color": null,
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-04-16T19:42:49.725Z",
+	"_postman_exported_using": "Postman/11.87.3"
+}

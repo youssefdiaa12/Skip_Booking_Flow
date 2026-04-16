@@ -31,12 +31,12 @@ test.describe("Skip Booking System - E2E Tests", () => {
     await step1.selectAddress(0);
     await step1.clickUseAddress();
 
-    await step2.selectWasteType("general");
+    await step2.selectWasteType(testData.wasteTypes[0]);
     await step2.clickContinueToStep3();
     await step2.waitForStep3();
 
     await step3.waitForSkips();
-    await step3.selectSkip("4-yard");
+    await step3.selectSkip(testData.skipSizes[0]);
     await step3.clickContinueToStep4();
     await step3.waitForStep4();
 
@@ -64,21 +64,21 @@ test.describe("Skip Booking System - E2E Tests", () => {
     await step1.selectAddress(0);
     await step1.clickUseAddress();
 
-    await step2.selectWasteType("heavy");
+    await step2.selectWasteType(testData.wasteTypes[1]);
     await step2.clickContinueToStep3();
     await step2.waitForStep3();
 
     await step3.waitForSkips();
 
     // FAIL - 8-yard should be disabled for heavy waste
-    expect(await step3.isSkipDisabled("8-yard")).toBe(false);
+    expect(await step3.isSkipDisabled(testData.skipSizes[1])).toBe(true);
 
-    await step3.selectSkip("4-yard");
+    await step3.selectSkip(testData.skipSizes[0]);
     await step3.clickContinueToStep4();
     await step3.waitForStep4();
 
     const reviewData = await step4.getReviewData();
-    expect(reviewData.wasteType).toBe("Heavy Waste");
+    expect(reviewData.wasteType).toBe(testData.wasteTypes[1]);
 
     await step4.clickConfirm();
     await step4.waitForSuccess();
@@ -98,12 +98,12 @@ test.describe("Skip Booking System - E2E Tests", () => {
     await step1.enterManualAddress("123 Test Street, London");
     await step1.clickUseManual();
 
-    await step2.selectWasteType("general");
+    await step2.selectWasteType(testData.wasteTypes[0]);
     await step2.clickContinueToStep3();
     await step2.waitForStep3();
 
     await step3.waitForSkips();
-    await step3.selectSkip("6-yard");
+    await step3.selectSkip(testData.skipSizes[0]);
     await step3.clickContinueToStep4();
     await step3.waitForStep4();
 
@@ -131,11 +131,11 @@ test.describe("Skip Booking System - E2E Tests", () => {
     await step1.selectAddress(0);
     await step1.clickUseAddress();
 
-    await step2.selectWasteType("general");
+    await step2.selectWasteType(testData.wasteTypes[0]);
     await step2.clickContinueToStep3();
     await step2.waitForStep3();
     await step3.waitForSkips();
-    await step3.selectSkip("8-yard");
+    await step3.selectSkip(testData.skipSizes[0]);
     await step3.clickContinueToStep4();
     await step3.waitForStep4();
 
@@ -156,7 +156,7 @@ test.describe("Skip Booking System - E2E Tests", () => {
     await step1.selectAddress(0);
     await step1.clickUseAddress();
 
-    await step2.selectWasteType("plasterboard");
+    await step2.selectWasteType(testData.wasteTypes[2]);
 
     await expect(page.locator("#plasterboardOptions")).toBeVisible();
 
@@ -192,11 +192,11 @@ test.describe("Skip Booking System - E2E Tests", () => {
 
     await step1.selectAddress(0);
     await step1.clickUseAddress();
-    await step2.selectWasteType("general");
+    await step2.selectWasteType(testData.wasteTypes[0]);
     await step2.clickContinueToStep3();
     await step2.waitForStep3();
     await step3.waitForSkips();
-    await step3.selectSkip("4-yard");
+    await step3.selectSkip(testData.skipSizes[0]);
     await step3.clickContinueToStep4();
     await step3.waitForStep4();
 
@@ -214,11 +214,11 @@ test.describe("Skip Booking System - E2E Tests", () => {
     await step1.selectAddress(0);
     await step1.clickUseAddress();
 
-    await step2.selectWasteType("general");
+    await step2.selectWasteType(testData.wasteTypes[0]);
     await step2.clickContinueToStep3();
     await step2.waitForStep3();
     await step3.waitForSkips();
-    await step3.selectSkip("4-yard");
+    await step3.selectSkip(testData.skipSizes[0]);
     await step3.clickContinueToStep4();
     await step3.waitForStep4();
 
@@ -246,11 +246,11 @@ test.describe("Skip Booking System - E2E Tests", () => {
     await step1.selectAddress(0);
     await step1.clickUseAddress();
 
-    await step2.selectWasteType("general");
+    await step2.selectWasteType(testData.wasteTypes[1]);
     await step2.clickContinueToStep3();
     await step2.waitForStep3();
     await step3.waitForSkips();
-    await step3.selectSkip("4-yard");
+    await step3.selectSkip(testData.skipSizes[0]);
     await step3.clickContinueToStep4();
     await step4.waitForStep4();
 

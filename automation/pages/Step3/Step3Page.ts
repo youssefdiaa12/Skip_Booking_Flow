@@ -48,7 +48,7 @@ export class Step3Page extends BasePage {
     await this.page.locator("#step2").waitFor({ state: "visible" });
   }
 
-  async getSkipPrice(size: string): Promise<string> {
+  async getSkipPrice(size: string): Promise<string|null> {
     const skip = this.skipOptions.filter({ hasText: size }).first();
     const priceElement = skip.locator(".skip-price");
     return priceElement.textContent();
