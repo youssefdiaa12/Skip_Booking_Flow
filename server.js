@@ -79,6 +79,7 @@ function delay(ms) {
 app.post("/api/postcode/lookup", async (req, res) => {
   const { postcode } = req.body;
   const normalized = normalizePostcode(postcode);
+  const isRetry = req.body.retry || false;
 
   await delay(500);
 
@@ -104,11 +105,11 @@ app.post("/api/postcode/lookup", async (req, res) => {
     });
   }
 
-  if (normalized === "BS14DJ") {
-    bs1ErrorCount++;
-    if (bs1ErrorCount === 1) {
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+  if (normalized === "BS14DJ" && !isRetry) {
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+
+  if (normalized === "BS14DJ" && isRetry) {
     return res.json({
       postcode: postcode,
       addresses: addressFixtures["BS1 4DJ"],
@@ -131,6 +132,8 @@ app.post("/api/postcode/lookup", async (req, res) => {
 });
 
 app.post("/api/waste-types", (req, res) => {
+  const { heavyWaste, plasterboard, plasterboardOption } = req.body;
+  console.log("Waste type API called:", { heavyWaste, plasterboard, plasterboardOption });
   res.json({ ok: true });
 });
 

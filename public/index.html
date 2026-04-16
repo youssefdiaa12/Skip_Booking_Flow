@@ -310,18 +310,23 @@
       const step4 = document.getElementById("step4");
       const successCard = document.getElementById("successCard");
 
-      document
-        .getElementById("lookupBtn")
-        .addEventListener("click", lookupPostcode);
-      document
-        .getElementById("retryBtn")
-        .addEventListener("click", lookupPostcode);
+      let isRetry = false;
+
+      document.getElementById("lookupBtn").addEventListener("click", () => {
+        isRetry = false;
+        lookupPostcode();
+      });
+      document.getElementById("retryBtn").addEventListener("click", () => {
+        isRetry = true;
+        lookupPostcode();
+      });
       document
         .getElementById("useAddressBtn")
         .addEventListener("click", () => goToStep(2));
-      document
-        .getElementById("useManualBtn")
-        .addEventListener("click", () => goToStep(2));
+      document.getElementById("useManualBtn").addEventListener("click", () => {
+        state.manualAddress = document.getElementById("manualAddress").value;
+        goToStep(2);
+      });
       document
         .getElementById("backToStep1")
         .addEventListener("click", () => goToStep(1));
@@ -352,6 +357,15 @@
         });
 
       document.getElementById("toStep3").addEventListener("click", () => {
+        fetch("/api/waste-types", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            heavyWaste: state.wasteType === "heavy",
+            plasterboard: state.wasteType === "plasterboard",
+            plasterboardOption: state.plasterboardOption || null
+          }),
+        });
         loadSkips();
         goToStep(3);
       });
@@ -375,7 +389,7 @@
         fetch("/api/postcode/lookup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ postcode }),
+          body: JSON.stringify({ postcode, retry: isRetry }),
         })
           .then((res) => {
             if (!res.ok) throw new Error("API Error");
@@ -612,6 +626,10 @@
         if (step === 2) step2.classList.remove("hidden");
         if (step === 3) step3.classList.remove("hidden");
         if (step === 4) step4.classList.remove("hidden");
+
+        if (step === 2) {
+          validateStep2();
+        }
       }
 
       function resetForm() {

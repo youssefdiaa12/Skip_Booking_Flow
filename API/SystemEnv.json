@@ -1,0 +1,40 @@
+{
+	"id": "0964a783-891e-4f30-86f1-242b7a0e5c4a",
+	"name": "Skip booking system dev environment",
+	"values": [
+		{
+			"key": "BaseURL",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "PostCode",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "addressId",
+			"value": "",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "SkipSize",
+			"value": "",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "SkipPrice",
+			"value": "",
+			"type": "any",
+			"enabled": true
+		}
+	],
+	"color": null,
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-04-16T18:55:19.527Z",
+	"_postman_exported_using": "Postman/11.87.3"
+}
