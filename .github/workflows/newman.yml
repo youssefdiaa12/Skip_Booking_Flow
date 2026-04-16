@@ -8,8 +8,8 @@ on:
 
 jobs:
   newman:
-    name: Run API Tests with Newman
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,13 +18,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Newman
-        run: npm install -g newman
+      - name: Install Newman & HTML Reporter
+        run: npm install -g newman newman-reporter-htmlextra
 
       - name: Start server
         run: |
@@ -32,12 +31,7 @@ jobs:
           sleep 5
 
       - name: Run API Tests
-        run: |
-          newman run API/SkipBookingCollection.json \
-            --environment API/SkipBookingSystemEnv.json \
-            --reporters cli,html \
-            --reporter-html-export newman-report.html \
-            --reporter-cli-summary
+        run: newman run API/SkipBookingCollection.json --environment API/SkipBookingSystemEnv.json --reporters cli,htmlextra --reporter-htmlextra-export newman-report.html
 
       - name: Upload Newman report
         if: always()
@@ -50,5 +44,5 @@ jobs:
       - name: Generate summary
         if: always()
         run: |
-          echo "## API Test Results (Newman)" >> $GITHUB_STEP_SUMMARY
-          echo "Newman report available in artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ API Test Results (Newman)" >> $GITHUB_STEP_SUMMARY
+          echo "📄 HTML report available in workflow artifacts." >> $GITHUB_STEP_SUMMARY
