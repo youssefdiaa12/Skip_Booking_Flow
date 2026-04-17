@@ -2,68 +2,270 @@
 
 A QA Assessment project - A multi-step wizard for booking skip (container) rentals in the UK.
 
-## Features
+## Project Overview
 
-- UK postcode lookup with deterministic fixtures
-- Multi-path waste type selection (General, Heavy, Plasterboard)
-- Skip size selection with disabled states based on waste type
-- Price breakdown with VAT
-- Loading, empty, and error state handling
-- Booking confirmation with double-submit prevention
+This is a complete booking system with:
+- **Frontend**: Multi-step wizard form (Step 1 → Step 4)
+- **Backend**: Express.js mock API with deterministic fixtures
+- **Testing**: Playwright E2E tests + Newman API tests + Manual tests
+- **CI/CD**: GitHub Actions workflows
 
-## Prerequisites
+---
 
-- Node.js (v14 or higher)
-- npm
+## Quick Start
 
-## Installation
-
+### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-## Running the Application
-
+### 2. Start the Server
 ```bash
 npm start
 ```
 
-The application will be available at `http://localhost:3000`
+### 3. Open Browser
+```
+http://localhost:3000
+```
+
+---
+
+## Application Flow
+
+### Step 1: Postcode Lookup
+- Enter UK postcode
+- System returns addresses (or shows manual entry)
+- **Fixtures**: SW1A 1AA (12 addresses), EC1A 1BB (0), M1 1AE (2s delay), BS1 4DJ (error)
+
+### Step 2: Waste Type Selection
+- **General Waste**: Standard skip pricing
+- **HeavyWaste**: Large skips disabled (8-yard+)
+- **Plasterboard**: Requires extra option (Separate/Mixed/Bagged)
+
+### Step 3: Skip Selection
+- Shows 8 skip sizes (4-yard to 20-yard)
+- Pricing varies by waste type
+- Some skips disabled based on selection
+
+### Step 4: Review & Confirm
+- Price breakdown (skip + VAT)
+- Confirm booking → Get Booking ID
+
+---
 
 ## API Endpoints
 
-| Method | Endpoint               | Description                                                            |
-| ------ | ---------------------- | ---------------------------------------------------------------------- |
-| POST   | `/api/postcode/lookup` | Lookup addresses by postcode                                           |
-| POST   | `/api/waste-types`     | Submit waste type selection                                            |
-| GET    | `/api/skips`           | Get available skips (query params: postcode, heavyWaste, plasterboard) |
-| POST   | `/api/booking/confirm` | Confirm booking                                                        |
+| Method | Endpoint | Description | Request Body |
+|--------|-----------|-------------|--------------|
+| POST | `/api/postcode/lookup` | Lookup addresses | `{"postcode": "SW1A 1AA"}` |
+| POST | `/api/waste-types` | Submit waste type | `{"heavyWaste": false, "plasterboard": true, "plasterboardOption": "separate"}` |
+| GET | `/api/skips` | Get skips | `?postcode=SW1A1AA&heavyWaste=true` |
+| POST | `/api/booking/confirm` | Confirm booking | `{"postcode": "SW1A 1AA", "addressId": "addr_1", "skipSize": "4-yard", "price": 120}` |
 
-## Deterministic Fixtures
+### API Response Examples
 
-| Postcode   | Behavior                                  |
-| ---------- | ----------------------------------------- |
-| `SW1A 1AA` | Returns 12 addresses                      |
-| `EC1A 1BB` | Returns 0 addresses (empty state)         |
-| `M1 1AE`   | Simulated latency (2s delay)              |
-| `BS1 4DJ`  | 500 error on first call, success on retry |
+```json
+// POST /api/postcode/lookup
+{"postcode": "SW1A 1AA", "addresses": [{"id": "addr_1", "line1": "10 Downing Street", "city": "London"}]}
 
-## Testing
+// GET /api/skips
+{"skips": [{"size": "4-yard", "price": 120, "disabled": false}]}
 
-Manual test cases are documented in `manual-tests.md`
+// POST /api/booking/confirm
+{"status": "success", "bookingId": "BK-ABC123"}
+```
 
-Automation tests are in the `automation/` directory
+---
+
+## Running Tests
+
+### Playwright E2E Tests (Frontend)
+```bash
+# Install dependencies (first time)
+npm install
+
+# Install Playwright browsers
+npx playwright install chromium
+
+# Start server in background
+npm start &
+
+# Run tests
+npm test
+
+# Run with visible browser
+npm run test:headed
+
+# Run with Playwright UI
+npm run test:ui
+```
+
+### Newman API Tests (Backend)
+```bash
+# Install Newman
+npm install -g newman
+
+# Start server
+npm start &
+
+# Run API tests
+newman run API/collection.json --environment API/environment.json
+
+# With HTML report
+newman run API/collection.json --environment API/environment.json --reporters cli,html --reporter-html-export newman-report.html
+```
+
+---
+
+## GitHub Actions (CI/CD)
+
+On every push to `main`, two workflows run:
+
+### 1. Playwright Tests
+Location: `.github/workflows/playwright.yml`
+- Installs dependencies
+- Runs E2E tests
+- Generates HTML report
+- Uploads as artifact
+
+### 2. Newman API Tests  
+Location: `.github/workflows/newman.yml`
+- Starts server
+- Runs API tests
+- Generates report
+- Uploads as artifact
+
+### View Reports
+After workflow completes, check **Actions** tab → **Artifacts**
+
+---
+
+## Important Files
+
+### Core Application
+| File | Purpose |
+|------|---------|
+| `server.js` | Express backend - all API endpoints |
+| `public/index.html` | Frontend - complete wizard UI + JS |
+
+### Testing
+| File | Purpose |
+|------|---------|
+| `automation/tests/booking.spec.ts` | Playwright E2E tests (8 test cases) |
+| `automation/pages/Step1/` | Page Object Model - Step 1 |
+| `automation/pages/Step2/` | Page Object Model - Step 2 |
+| `automation/pages/Step3/` | Page Object Model - Step 3 |
+| `automation/pages/Step4/` | Page Object Model - Step 4 |
+| `automation/fixtures/testData.ts` | Test data & fixtures |
+| `API/collection.json` | Newman Postman collection |
+
+### Documentation
+| File | Purpose |
+|------|---------|
+| `manual-tests.md` | 47 manual test cases |
+| `bug-reports.md` | 4 bugs with reproduction steps |
+| `API/README.md` | API testing guide |
+
+### CI/CD
+| File | Purpose |
+|------|---------|
+| `.github/workflows/playwright.yml` | Playwright workflow |
+| `.github/workflows/newman.yml` | Newman workflow |
+
+---
+
+## Known Bugs (for testing)
+
+| Bug ID | Description | How to Reproduce |
+|--------|-------------|------------------|
+| BUG-001 | Button shows "Processing..." but is still clickable | Click Confirm, then click again within 3 seconds |
+| BUG-002 | BS1 4DJ always succeeds | Enter BS1 4DJ - always returns addresses (should fail!) |
+| BUG-003 | Empty manual address allowed | Enter EC1A 1BB, leave address empty, click Continue |
+| BUG-004 | Skip selection persists when changing waste type | Select General → 4-yard, back, change to Heavy, continue - old selection shows |
+
+---
+
+## Deterministic Fixtures (Test Data)
+
+### Postcode Fixtures
+| Postcode | Addresses | Behavior |
+|----------|-----------|----------|
+| SW1A 1AA | 12 | Success |
+| EC1A 1BB | 0 | Empty state |
+| M1 1AE | 1 | 2 second delay |
+| BS1 4DJ | 1 | Always succeeds (bug!) |
+
+### Skip Pricing by Waste Type
+| Size | General | Heavy | Plasterboard |
+|------|---------|-------|-------------|
+| 4-yard | £120 | £150 | £130 |
+| 6-yard | £180 | £210 | £190 |
+| 8-yard | £240 | £280 (disabled!) | £250 |
+| 10-yard | £300 | £350 (disabled!) | £310 |
+| 12-yard | £360 | £410 (disabled!) | £370 |
+| 14-yard | £420 | £470 (disabled!) | £430 (disabled!) |
+| 16-yard | £480 | £530 (disabled!) | £490 (disabled!) |
+| 20-yard | £600 | £650 (disabled!) | £610 (disabled!) |
+
+---
 
 ## Project Structure
 
 ```
 .
-├── server.js          # Express backend with mock API
+├── server.js                  # Express API server
 ├── public/
-│   └── index.html    # Frontend HTML/CSS/JS
-├── automation/       # E2E tests
-├── manual-tests.md    # Manual test documentation
-├── bug-reports.md    # Bug reports
-├── package.json      # Dependencies
-└── README.md         # This file
+│   └── index.html            # Frontend (HTML+CSS+JS)
+├── API/
+│   ├── collection.json       # Postman collection
+│   ├── environment.json     # Environment variables
+│   └── README.md            # API testing docs
+├── automation/
+│   ├── pages/               # Page Object Model
+│   │   ├── Step1/           # Step 1 POM
+│   │   ├── Step2/           # Step 2 POM
+│   │   ├── Step3/           # Step 3 POM
+│   │   └── Step4/            # Step 4 POM
+│   ├── fixtures/
+│   │   └── testData.ts      # Test data
+│   ├── tests/
+│   │   └── booking.spec.ts  # Playwright tests
+│   └── playwright.config.js
+├── .github/
+│   └── workflows/
+│       ├── playwright.yml   # CI: Playwright
+│       └── newman.yml      # CI: Newman
+├── manual-tests.md         # Manual test cases
+├── bug-reports.md           # Bug documentation
+└── package.json            # Dependencies
+```
+
+---
+
+## Troubleshooting
+
+### Server won't start?
+```bash
+# Kill existing process
+powershell -Command "Get-NetTCPConnection -LocalPort 3000 | Stop-Process -Force"
+npm start
+```
+
+### Playwright tests fail?
+```bash
+# Install browsers
+npx playwright install chromium
+
+# Start server first
+npm start
+```
+
+### Newman tests fail?
+```bash
+# Server must be running
+npm start
+
+# Then run tests
+newman run API/collection.json --environment API/environment.json
 ```
