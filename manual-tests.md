@@ -141,7 +141,6 @@
 - **Expected**: 
   - Plasterboard options hidden
   - Continue button enabled
-
 ---
 
 ## 3. Skip Selection Tests (Step 3)
