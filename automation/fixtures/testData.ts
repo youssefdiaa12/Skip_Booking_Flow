@@ -99,7 +99,7 @@ export const testData = {
   errorPostcodes: ["BS1 4DJ"],
   latendcyPostcodes: ["M1 1AE"],
 
-  wasteTypes: ["general", "heavy", "plasterboard"] as const,
+  wasteTypes: ["General Waste", "Heavy Waste", "Plasterboard"] as const,
   plasterboardOptions: ["separate", "mixed", "bagged"] as const,
 
   skipSizes: [

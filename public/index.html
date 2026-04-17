@@ -478,13 +478,6 @@
           .querySelector(`[data-type="${type}"]`)
           .classList.add("selected");
         
-        // If waste type changed and user had selected a skip, clear it
-        if (state.wasteType && state.wasteType !== type && state.selectedSkip) {
-          state.selectedSkip = null;
-          document.querySelectorAll(".skip-option").forEach(o => o.classList.remove("selected"));
-          document.getElementById("toStep4").disabled = true;
-        }
-        
         state.wasteType = type;
 
         const plasterboardOptions = document.getElementById(
@@ -583,48 +576,47 @@
           `£${total.toFixed(2)}`;
       }
 
-      function confirmBooking() {
-        if (state.isSubmitting) return;
+function confirmBooking() {
+  if (state.isSubmitting) return;
 
-        state.isSubmitting = true;
-        const btn = document.getElementById("confirmBtn");
-        
-        // DELAYED DISABLE - This creates a race condition bug!
-        // The button is NOT immediately disabled, allowing rapid clicks
-        setTimeout(() => {
-          btn.disabled = true;
-          btn.textContent = "Processing...";
-        }, 1000);
+  state.isSubmitting = true;
+  const btn = document.getElementById("confirmBtn");
 
-        const bookingData = {
-          postcode: state.postcode,
-          addressId: state.selectedAddress?.id || "manual",
-          heavyWaste: state.wasteType === "heavy",
-          plasterboard: state.wasteType === "plasterboard",
-          skipSize: state.selectedSkip.size,
-          price: state.selectedSkip.price,
-        };
+  const bookingData = {
+    postcode: state.postcode,
+    addressId: state.selectedAddress?.id || "manual",
+    heavyWaste: state.wasteType === "heavy",
+    plasterboard: state.wasteType === "plasterboard",
+    skipSize: state.selectedSkip.size,
+    price: state.selectedSkip.price,
+  };
 
-        fetch("/api/booking/confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bookingData),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            document.getElementById("bookingId").textContent = data.bookingId;
-            step4.classList.add("hidden");
-            successCard.classList.remove("hidden");
-          })
-          .catch((err) => {
-            alert("Booking failed. Please try again.");
-            btn.disabled = false;
-            btn.textContent = "Confirm Booking";
-          })
-          .finally(() => {
-            state.isSubmitting = false;
-          });
-      }
+  // ⏳ Intentional 3‑second delay BEFORE UI feedback
+  setTimeout(() => {
+    btn.textContent = "Processing...";
+    btn.disabled = true;
+
+    fetch("/api/booking/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bookingData),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        document.getElementById("bookingId").textContent = data.bookingId;
+        step4.classList.add("hidden");
+        successCard.classList.remove("hidden");
+      })
+      .catch(() => {
+        alert("Booking failed. Please try again.");
+        btn.disabled = false;
+        btn.textContent = "Confirm Booking";
+      })
+      .finally(() => {
+        state.isSubmitting = false;
+      });
+  }, 2000);
+}
 
       function goToStep(step) {
         state.step = step;

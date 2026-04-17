@@ -105,11 +105,12 @@ app.post("/api/postcode/lookup", async (req, res) => {
     });
   }
 
-  if (normalized === "BS14DJ" && !isRetry) {
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-
-  if (normalized === "BS14DJ" && isRetry) {
+  // BUG: BS1 4DJ always succeeds (ignores retry flag!)
+  // This makes the bug reproducible: first call should fail but doesn't
+  //  if (normalized === "BS14DJ" && !isRetry) {
+  //   return res.status(500).json({ error: "Internal Server Error" });
+  // }
+  if (normalized === "BS14DJ") {
     return res.json({
       postcode: postcode,
       addresses: addressFixtures["BS1 4DJ"],

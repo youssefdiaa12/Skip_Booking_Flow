@@ -23,12 +23,12 @@ export class Step2Page extends BasePage {
   }
 
   async selectWasteType(
-    type: "general" | "heavy" | "plasterboard",
+    type: "General Waste" | "Heavy Waste" | "Plasterboard",
   ): Promise<void> {
     const option = {
-      general: this.generalWasteOption,
-      heavy: this.heavyWasteOption,
-      plasterboard: this.plasterboardOption,
+      "General Waste": this.generalWasteOption,
+      "Heavy Waste": this.heavyWasteOption,
+      "Plasterboard": this.plasterboardOption,
     }[type];
     await option.click();
   }

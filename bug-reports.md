@@ -2,93 +2,168 @@
 
 ---
 
-## Bug Report #1: Double Submit Prevention - Race Condition
+Perfect — this bug report just needs to be **realigned with the new behavior** (delay happens *before* “Processing…” appears).
+
+Below is a **cleanly adjusted version** that is internally consistent and still very strong from a QA perspective.
+
+***
+
+##  Bug Report #1: No Feedback After Click → Allows Multiple Submissions
 
 ### Details
-| Field | Value |
-|-------|-------|
-| **Bug ID** | BUG-001 |
-| **Severity** | High |
-| **Priority** | Critical |
-| **Environment** | Chrome, Firefox - localhost:3000 |
-| **Date Found** | 2024-04-15 |
+
+| Field           | Value                            |
+| --------------- | -------------------------------- |
+| **Bug ID**      | BUG-001                          |
+| **Severity**    | High                             |
+| **Priority**    | Critical                         |
+| **Environment** | Chrome, Firefox – localhost:3000 |
+| **Date Found**  | 2026-04-16                       |
+
+***
 
 ### Description
-The Confirm Booking button has a **delayed disable** (1 second setTimeout). This creates a race condition where:
 
-1. User clicks Confirm button
-2. Button text changes to "Processing..." (visually) but is still ENABLED for 1 second
-3. If user clicks again within 1 second, MULTIPLE booking requests are sent
-4. Multiple booking IDs are generated
+When the user clicks **"Confirm Booking"**, there is **no immediate visual or functional feedback** for approximately **3 seconds**:
+
+1.   Button remains **enabled and clickable**
+2.   No text change (still shows *Confirm Booking*)
+3.   No loading or processing indicator
+4.   User can click multiple times
+5.  After \~3 seconds, the button finally:
+    *   Changes text to **"Processing…"**
+    *   Becomes disabled
+    *   Sends the booking request(s)
+
+This creates a **false perception that the click did not register**, encouraging repeated clicks and resulting in **duplicate bookings**.
+
+***
 
 ### Steps to Reproduce
-1. Complete all steps up to Review (Step 4)
-2. Click Confirm Booking
-3. **Immediately** click again within 1 second (before button disables)
-4. Observe in Network tab: Multiple POST requests to `/api/booking/confirm`
+
+1.  Complete all required steps until **Review (Step 4)**
+2.  Click **"Confirm Booking"**
+3.  Observe: **No visual feedback** (button text unchanged)
+4.  Click **"Confirm Booking" again within 3 seconds**
+5.  Open **Network tab**
+6.  Observe **multiple POST `/api/booking/confirm` requests**
+
+***
 
 ### Actual Result
-- Button shows "Processing..." but is still clickable for 1 second
-- Multiple booking requests sent
-- Multiple booking IDs generated (e.g., BK-ABC123, BK-DEF456)
+
+*   Button remains enabled for \~3 seconds after click
+*   No “Processing…” feedback during this time
+*   Multiple booking requests can be triggered
+*   Multiple booking IDs generated
+
+***
 
 ### Expected Result
-- Button should be DISABLED immediately on first click
-- No duplicate requests possible
 
-### Technical Details
+*   Button should:
+    *   Either **disable immediately**, or
+    *   Show **instant feedback** (e.g. “Processing…”, spinner)
+*   Only **one booking request** should be possible per click
+
+***
+
+### Visual Timeline
+
+    T+0s  : Click Confirm → No change (still clickable)
+    T+1s  : Click again → No change (still clickable)
+    T+2s  : Click again → No change (still clickable)
+    T+3s  : Button shows "Processing..." + disables (too late)
+
+***
+
+### Code Explanation
+
+#### Root Cause
+
+UI feedback and button disabling are **delayed by 2 seconds**, leaving the button fully interactive during that window.
+
+#### Buggy Code
+
 ```javascript
-// Current buggy code (public/index.html line 573-579):
+// public/index.html – confirmBooking()
+
 function confirmBooking() {
   if (state.isSubmitting) return;
   state.isSubmitting = true;
+
   const btn = document.getElementById("confirmBtn");
-  
-  // BUG: Delayed disable - button enabled for 1 second!
+
+  // BUG: UI feedback and disable delayed by 3 seconds
   setTimeout(() => {
-    btn.disabled = true;
     btn.textContent = "Processing...";
-  }, 1000);
-  // ...
+    btn.disabled = true;
+  }, 2000);
+
+  // Booking request triggered after delay
 }
 ```
 
+***
+
+### Impact
+
+*   ❗ Duplicate bookings
+*   ❗ Financial and data integrity risk
+*   ❗ Poor UX (application appears unresponsive)
+*   ❗ Hard to detect without fast user interaction
+
+***
+
+### Recommendation
+
+*   Disable button **immediately** on click
+*   Show **instant processing feedback**
+*   Delay backend calls if needed, but **never delay UI state**
+
+***
+
 ---
 
-## Bug Report #2: BS1 4DJ - Error State Not Working Reliably
+## Bug Report #2: BS1 4DJ - 500 Error Never Occurs
 
 ### Details
 | Field | Value |
 |-------|-------|
 | **Bug ID** | BUG-002 |
-| **Severity** | Medium |
-| **Priority** | High |
+| **Severity** | High |
+| **Priority** | Critical |
 | **Environment** | localhost:3000 |
-| **Date Found** | 2024-04-15 |
+| **Date Found** | 2026-04-16 |
 
 ### Description
-The BS1 4DJ postcode should return a 500 error on first call and succeed on retry. However, this behavior depends on:
-- Server-side state (in-memory variable)
-- Frontend sending correct `retry` parameter
-
-The bug is that the error behavior **resets on page refresh** because the server variable is stored in memory.
+According to requirements, postcode `BS1 4DJ` should return a 500 error on first call and succeed on retry. However, due to a bug in the server code, the 500 error **never occurs** - all lookups succeed.
 
 ### Steps to Reproduce
 1. Enter postcode `BS1 4DJ`
-2. Click "Lookup Address" - **should show error**
-3. Click "Retry" - **should show addresses**
-4. **Refresh the browser page** (F5)
-5. Enter postcode `BS1 4DJ` again
-6. Click "Lookup Address" - **Unexpectedly succeeds!**
+2. Click "Lookup Address"
+3. Observe: **Surprisingly succeeds with addresses!** (Expected: 500 error!)
 
 ### Actual Result
-After page refresh, first lookup succeeds (should fail with 500).
+Lookup always succeeds - no error displayed.
 
 ### Expected Result
-First lookup should always fail regardless of page refresh.
+First lookup should return 500 error. Only Retry button should succeed.
 
 ### Root Cause
-Server code uses in-memory variable that resets on server restart.
+```javascript
+// server.js - Bug: Ignores retry flag, always returns success
+if (normalized === "BS14DJ") {
+  return res.json({
+    postcode: postcode,
+    addresses: addressFixtures["BS1 4DJ"],
+  });
+}
+// Should be:
+// if (normalized === "BS14DJ" && !isRetry) {
+//   return res.status(500).json({ error: "Internal Server Error" });
+// }
+```
 
 ---
 
@@ -129,7 +204,7 @@ Manual address should have minimum validation (non-empty, at least 5 characters)
 | **Severity** | High |
 | **Priority** | Critical |
 | **Environment** | Chrome - localhost:3000 |
-| **Date Found** | 2024-04-15 |
+| **Date Found** | 2026-04-16 |
 
 ### Description
 When user selects a skip size, then goes back to change waste type and returns, the following issues occur:
@@ -147,9 +222,9 @@ When user selects a skip size, then goes back to change waste type and returns, 
 6. Change to **Heavy Waste** (no longer need additional options)
 7. Click **Continue** → returns to Step 3
 8. Observe: 
-   - 4-yard shows as **selected** (has "selected" class)
    - Continue button is **enabled** (clickable!)
-   - But skip options have DIFFERENT prices for Heavy Waste
+   - Clicking on Continue button will navigate you to the Step 4
+   - Skip options price shown with the general option 4-yard price!
 
 ### Actual Result
 - Skip appears selected visually with "selected" CSS class
