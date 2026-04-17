@@ -339,7 +339,7 @@ sonar.sourceEncoding=UTF-8
 
 ### Benefits of SonarQube in CI/CD
 - **Early Detection** - Find issues before production
-- **Quality Gates** - Block commits that降低 quality
+- **Quality Gates** - Block commits that affect the quality
 - **Historical Tracking** - See quality trends over time
 - **Security Scanning** - Detect vulnerabilities automatically
 - **Technical Debt Metrics** - Measure codebase maintainability
