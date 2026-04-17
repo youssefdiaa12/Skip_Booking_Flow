@@ -466,12 +466,25 @@
       }
 
       function selectWasteType(type) {
+        // BUG: When changing waste type, the previous skip selection is NOT cleared!
+        // This causes stale data to persist with wrong pricing
+        // Expected: Clear state.selectedSkip when waste type changes
+        // Actual: Selection persists with old pricing
+        
         document
           .querySelectorAll(".waste-option")
           .forEach((o) => o.classList.remove("selected"));
         document
           .querySelector(`[data-type="${type}"]`)
           .classList.add("selected");
+        
+        // If waste type changed and user had selected a skip, clear it
+        if (state.wasteType && state.wasteType !== type && state.selectedSkip) {
+          state.selectedSkip = null;
+          document.querySelectorAll(".skip-option").forEach(o => o.classList.remove("selected"));
+          document.getElementById("toStep4").disabled = true;
+        }
+        
         state.wasteType = type;
 
         const plasterboardOptions = document.getElementById(
@@ -575,8 +588,13 @@
 
         state.isSubmitting = true;
         const btn = document.getElementById("confirmBtn");
-        btn.disabled = true;
-        btn.textContent = "Processing...";
+        
+        // DELAYED DISABLE - This creates a race condition bug!
+        // The button is NOT immediately disabled, allowing rapid clicks
+        setTimeout(() => {
+          btn.disabled = true;
+          btn.textContent = "Processing...";
+        }, 1000);
 
         const bookingData = {
           postcode: state.postcode,

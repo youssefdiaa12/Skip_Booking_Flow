@@ -2,256 +2,187 @@
 
 ---
 
-## Bug Report #1: Plasterboard Option Selection Not Cleared on Back Navigation
+## Bug Report #1: Double Submit Prevention - Race Condition
 
 ### Details
-
-| Field           | Value                            |
-| --------------- | -------------------------------- |
-| **Bug ID**      | BUG-001                          |
-| **Severity**    | High                             |
-| **Priority**    | Critical                         |
+| Field | Value |
+|-------|-------|
+| **Bug ID** | BUG-001 |
+| **Severity** | High |
+| **Priority** | Critical |
 | **Environment** | Chrome, Firefox - localhost:3000 |
-| **Date Found**  | 2024-04-15                       |
+| **Date Found** | 2024-04-15 |
 
 ### Description
+The Confirm Booking button has a **delayed disable** (1 second setTimeout). This creates a race condition where:
 
-When user selects "Plasterboard" waste type, chooses a handling option (Separate/Mixed/Bagged), then navigates to Step 3 and returns back to Step 2 to change the waste type, the previously selected plasterboard option remains checked. Observe the Continue button disabled.
-
-### Steps to Reproduce
-
-1. Enter postcode `SW1A 1AA`
-2. Select any address and click Continue
-3. Select "Plasterboard" waste type
-4. Select "Separate" option
-5. Click Continue to reach Step 3
-6. Click Back to return to Step 2
-7. Change waste type to "General Waste"
-8. Observe: Continue button is disabled
-
-### Actual Result
-
-The radio button for plasterboard option remains selected (checked), and when changing to a different waste type, the validation properly reset the state. The Continue button remains disabled even though General Waste doesn't require a plasterboard option.
-
-### Expected Result
-
-When user returns to Step 2, the state should be properly reset. Changing waste type should properly enable the Continue button. Alternatively, when navigating back to Step 2, the form state should be cleared or properly validated.
-
-### Evidence
-
-- Continue button shows disabled after changing waste type
-- Radio button remains checked visually
-- User must toggle the plasterboard option to get the button enabled
-
-### Suggested Fix
-
-In the `goToStep` function, re-run validation when entering Step 2:
-
-```javascript
-if (step === 2) {
-  validateStep2();
-}
-```
-
-And in `validateStep2`, ensure proper state checking:
-
-```javascript
-function validateStep2() {
-  const btn = document.getElementById("toStep3");
-  if (state.wasteType === "plasterboard" && !state.plasterboardOption) {
-    btn.disabled = true;
-  } else if (state.wasteType && state.wasteType !== "plasterboard") {
-    // When not using plasterboard, always enable
-    btn.disabled = false;
-  } else if (state.wasteType === "plasterboard" && state.plasterboardOption) {
-    btn.disabled = false;
-  } else {
-    btn.disabled = true;
-  }
-}
-```
-
----
-
-## Bug Report #2: Double Submit Prevention Insufficient
-
-### Details
-
-| Field           | Value                            |
-| --------------- | -------------------------------- |
-| **Bug ID**      | BUG-001                          |
-| **Severity**    | High                             |
-| **Priority**    | Critical                         |
-| **Environment** | Chrome, Firefox - localhost:3000 |
-| **Date Found**  | 2024-04-15                       |
-
-### Description
-
-The double-submit prevention only disables the button after the first request starts, not before. Rapidly clicking the Confirm button multiple times can still trigger multiple booking requests because there's a race condition between the click and the disable.
+1. User clicks Confirm button
+2. Button text changes to "Processing..." (visually) but is still ENABLED for 1 second
+3. If user clicks again within 1 second, MULTIPLE booking requests are sent
+4. Multiple booking IDs are generated
 
 ### Steps to Reproduce
-
-1. Complete all steps up to Review
+1. Complete all steps up to Review (Step 4)
 2. Click Confirm Booking
-3. Immediately click again (within 50ms) before the button shows "Processing..."
-4. Observe: Multiple requests may be sent
+3. **Immediately** click again within 1 second (before button disables)
+4. Observe in Network tab: Multiple POST requests to `/api/booking/confirm`
 
 ### Actual Result
-
-Button disabled only after fetch starts, allowing potential duplicate bookings.
+- Button shows "Processing..." but is still clickable for 1 second
+- Multiple booking requests sent
+- Multiple booking IDs generated (e.g., BK-ABC123, BK-DEF456)
 
 ### Expected Result
+- Button should be DISABLED immediately on first click
+- No duplicate requests possible
 
-Button should be disabled immediately on mousedown/pointerdown to prevent any duplicate requests.
-
-### Evidence
-
-- Network tab shows potential multiple POST requests to `/api/booking/confirm`
-- Race condition between click handler and button disable
-
-### Suggested Fix
-
+### Technical Details
 ```javascript
-confirmBtn.addEventListener("pointerdown", () => {
-  if (state.isSubmitting) {
-    event.preventDefault();
-    return;
-  }
+// Current buggy code (public/index.html line 573-579):
+function confirmBooking() {
+  if (state.isSubmitting) return;
   state.isSubmitting = true;
-  confirmBtn.disabled = true;
-  confirmBtn.textContent = "Processing...";
-  // proceed with fetch
-});
+  const btn = document.getElementById("confirmBtn");
+  
+  // BUG: Delayed disable - button enabled for 1 second!
+  setTimeout(() => {
+    btn.disabled = true;
+    btn.textContent = "Processing...";
+  }, 1000);
+  // ...
+}
 ```
 
 ---
 
-## Bug Report #2: BS1 4DJ Error State Resets on Page Refresh
+## Bug Report #2: BS1 4DJ - Error State Not Working Reliably
 
 ### Details
-
-| Field           | Value                   |
-| --------------- | ----------------------- |
-| **Bug ID**      | BUG-002                 |
-| **Severity**    | Low                     |
-| **Priority**    | Medium                  |
-| **Environment** | Chrome - localhost:3000 |
-| **Date Found**  | 2024-04-15              |
+| Field | Value |
+|-------|-------|
+| **Bug ID** | BUG-002 |
+| **Severity** | Medium |
+| **Priority** | High |
+| **Environment** | localhost:3000 |
+| **Date Found** | 2024-04-15 |
 
 ### Description
+The BS1 4DJ postcode should return a 500 error on first call and succeed on retry. However, this behavior depends on:
+- Server-side state (in-memory variable)
+- Frontend sending correct `retry` parameter
 
-The BS1 4DJ postcode returns a 500 error on first attempt and succeeds on retry. However, this error counter is stored in server memory (not persisted). If user refreshes the browser page, the first lookup will succeed instead of failing as expected per requirements.
+The bug is that the error behavior **resets on page refresh** because the server variable is stored in memory.
 
 ### Steps to Reproduce
-
-1. Enter postcode `BS1 4DJ` and click Lookup (fails with 500)
-2. Click Retry - should succeed
-3. Refresh the browser page
-4. Enter postcode `BS1 4DJ` again
-5. Observe: Lookup succeeds on first attempt unexpectedly
+1. Enter postcode `BS1 4DJ`
+2. Click "Lookup Address" - **should show error**
+3. Click "Retry" - **should show addresses**
+4. **Refresh the browser page** (F5)
+5. Enter postcode `BS1 4DJ` again
+6. Click "Lookup Address" - **Unexpectedly succeeds!**
 
 ### Actual Result
-
-Error counter resets on page refresh, causing first lookup to succeed when it should fail.
+After page refresh, first lookup succeeds (should fail with 500).
 
 ### Expected Result
+First lookup should always fail regardless of page refresh.
 
-The error behavior should be deterministic - first call always returns 500 error regardless of page refresh.
-
-### Evidence
-
-- API error counter is stored in server memory variable
-- Requirement states BS1 4DJ should always fail on first call
+### Root Cause
+Server code uses in-memory variable that resets on server restart.
 
 ---
 
 ## Bug Report #3: Manual Address Not Validated
 
 ### Details
-
-| Field           | Value                   |
-| --------------- | ----------------------- |
-| **Bug ID**      | BUG-003                 |
-| **Severity**    | Medium                  |
-| **Priority**    | Medium                  |
+| Field | Value |
+|-------|-------|
+| **Bug ID** | BUG-003 |
+| **Severity** | Medium |
+| **Priority** | Medium |
 | **Environment** | Chrome - localhost:3000 |
-| **Date Found**  | 2024-04-15              |
+| **Date Found** | 2024-04-15 |
 
 ### Description
-
-User can proceed with empty manual address or address containing only special characters after the empty addresses state is shown.
+User can submit an empty manual address when no addresses are found for the postcode.
 
 ### Steps to Reproduce
-
-1. Enter postcode `EC1A 1BB` (triggers empty state)
-2. Leave manual address field completely empty
-3. Click Continue
-4. Observe: Button is enabled and proceeds with empty address
+1. Enter postcode `EC1A 1BB` (returns 0 addresses)
+2. Leave manual address field **completely empty**
+3. Click Continue button
+4. Observe: Proceeds with empty address
 
 ### Actual Result
-
-User can proceed with blank or invalid address.
+User can proceed with empty address field.
 
 ### Expected Result
-
-Manual address should have minimum validation (non-empty, reasonable length).
-
-### Evidence
-
-- Continue button allows empty string submission
-- No validation message displayed
-- Review step shows empty address
+Manual address should have minimum validation (non-empty, at least 5 characters).
 
 ---
 
-## Bug Report #4: Price Not Recalculated When Changing Skip After Back Navigation
+## Bug Report #4: Skip Selection Not Cleared When Changing Waste Type
 
 ### Details
-
-| Field           | Value                   |
-| --------------- | ----------------------- |
-| **Bug ID**      | BUG-004                 |
-| **Severity**    | Low                     |
-| **Priority**    | Low                     |
+| Field | Value |
+|-------|-------|
+| **Bug ID** | BUG-004 |
+| **Severity** | High |
+| **Priority** | Critical |
 | **Environment** | Chrome - localhost:3000 |
-| **Date Found**  | 2024-04-15              |
+| **Date Found** | 2024-04-15 |
 
 ### Description
+When user selects a skip size, then goes back to change waste type and returns, the following issues occur:
 
-When user selects a skip, then goes back to change waste type and returns, the previously selected skip may still be visually selected even though the pricing may have changed based on the new waste type.
+1. The **Continue button becomes enabled** without user re-selecting
+2. Skip shows as visually "selected" with old selection styling
+3. **Wrong pricing** - uses previous waste type price
 
 ### Steps to Reproduce
-
-1. Complete flow to Step 3 with General Waste
-2. Select 4-yard skip (£120)
-3. Go back to Step 2
-4. Select Heavy Waste (4-yard now costs £150)
-5. Go forward to Step 3
-6. Observe: 4-yard still shows as selected but may use stale pricing
+1. Enter postcode `SW1A 1AA` → select any address
+2. Select **General Waste** → Continue to Step 3
+3. Select **4-yard** skip (price: £120) → Continue to Step 4
+4. Click **Back** to return to Step 3
+5. Click **Back** to return to Step 2
+6. Change to **Heavy Waste** (no longer need additional options)
+7. Click **Continue** → returns to Step 3
+8. Observe: 
+   - 4-yard shows as **selected** (has "selected" class)
+   - Continue button is **enabled** (clickable!)
+   - But skip options have DIFFERENT prices for Heavy Waste
 
 ### Actual Result
-
-Selected skip appears selected but with potentially stale price from previous waste type selection.
+- Skip appears selected visually with "selected" CSS class
+- Continue button enabled (NOT disabled)
+- User can proceed with stale selection
+- Price in Review is WRONG (General: £120 vs Heavy: £150)
 
 ### Expected Result
+When waste type changes, previous skip selection should be CLEARED:
+- No skip shown as selected
+- Continue button disabled (forced re-selection)
 
-When waste type changes, previously selected skip should be deselected to force user to re-confirm their choice with updated pricing.
-
-### Evidence
-
-- Skip grid shows selection but API returned different price
-- Need to verify in review step
+### Technical Root Cause
+```javascript
+// selectWasteType() does NOT clear selectedSkip when waste type changes
+// Current code preserves state.selectedSkip across waste type changes
+function selectWasteType(type) {
+  // Only clears waste option visual, NOT skip selection
+  state.wasteType = type;
+  // Missing: state.selectedSkip = null;
+}
+```
 
 ---
 
 ## Summary
 
-| Bug ID  | Severity | Priority | Type              |
-| ------- | -------- | -------- | ----------------- |
-| BUG-001 | High     | Critical | Validation        |
-| BUG-002 | Low      | Medium   | State Persistence |
-| BUG-003 | Medium   | Medium   | Validation        |
-| BUG-004 | Low      | Low      | Data Consistency  |
+| Bug ID | Severity | Priority | Reproducible |
+|--------|----------|----------|-------------|
+| BUG-001 | High | Critical | ✓ Yes - delayed disable |
+| BUG-002 | Medium | High | ✓ Yes - resets on refresh |
+| BUG-003 | Medium | Medium | ✓ Yes - empty validation |
+| BUG-004 | High | Critical | ✓ Yes - stale data |
 
 ---
 
@@ -260,6 +191,7 @@ When waste type changes, previously selected skip should be deselected to force 
 - [x] Minimum 3 bugs reported
 - [x] Severity and priority included
 - [x] Environment details provided
-- [x] Steps to reproduce
+- [x] Steps to reproduce (numbered)
 - [x] Actual vs expected results
-- [x] At least 1 bug involves branching/state transition (no longer applicable - BUG-001 is now validation)
+- [x] Technical details/code snippets
+- [x] At least 1 bug involves branching or state transition (BUG-004)

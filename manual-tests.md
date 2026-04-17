@@ -1,119 +1,312 @@
 # Manual Test Cases - Skip Booking System
 
 ## Test Environment
-
 - **URL**: http://localhost:3000
 - **Browser**: Chrome/Firefox (latest)
-- **Date**: 2024
+- **Date**: 2024-04-15
 
 ---
 
 ## 1. Postcode Lookup Tests (Step 1)
 
-| ID    | Test Case                                         | Type        | Expected Result                                   |
-| ----- | ------------------------------------------------- | ----------- | ------------------------------------------------- |
-| TC001 | Enter valid postcode `SW1A 1AA` and click Lookup  | Positive    | Display 12 addresses in dropdown                  |
-| TC002 | Enter valid postcode `EC1A 1BB` and click Lookup  | Positive    | Display "No addresses found" and manual entry     |
-| TC003 | Enter valid postcode `M1 1AE` and click Lookup    | Edge        | Loading spinner for ~2 seconds, then show address |
-| TC004 | Enter postcode `BS1 4DJ` (first attempt)          | API Failure | Display error message with retry button           |
-| TC005 | Click Retry after BS1 4DJ error                   | API Failure | Display address successfully                      |
-| TC006 | Leave postcode empty and click Lookup             | Negative    | No API call, input remains focused                |
-| TC007 | Enter invalid format `123` and click Lookup       | Negative    | Return generic address (fallback)                 |
-| TC008 | Enter lowercase `sw1a 1aa`                        | Edge        | Normalize to uppercase, return addresses          |
-| TC009 | Enter postcode with extra spaces `SW1A  1AA`      | Edge        | Normalize and return addresses                    |
-| TC010 | Select an address from dropdown                   | Positive    | Enable Continue button                            |
-| TC011 | Enter address manually when dropdown empty        | Positive    | Enable Continue button with manual address        |
-| TC012 | Click Continue without selecting/entering address | Negative    | Button remains disabled                           |
+### TC001: SW1A 1AA Returns 12 Addresses
+- **Type**: Positive
+- **Steps**:
+  1. Navigate to http://localhost:3000
+  2. Enter "SW1A 1AA" in postcode input
+  3. Click "Lookup Address" button
+- **Expected**: Dropdown shows 12 addresses starting from "10 Downing Street"
+
+### TC002: EC1A 1BB Returns Empty State
+- **Type**: Positive
+- **Steps**:
+  1. Enter "EC1A 1BB" in postcode input
+  2. Click "Lookup Address" button
+- **Expected**: "No addresses found. Please enter manually:" message appears
+
+### TC003: M1 1AE Has 2 Second Latency
+- **Type**: Edge
+- **Steps**:
+  1. Enter "M1 1AE" in postcode input
+  2. Click "Lookup Address" button
+  3. Observe loading spinner
+- **Expected**: Loading spinner visible for ~2 seconds, then shows address
+
+### TC004: BS1 4DJ First Call Returns 500 Error
+- **Type**: API Failure
+- **Steps**:
+  1. Enter "BS1 4DJ" in postcode input
+  2. Click "Lookup Address" button
+- **Expected**: Red error message "An error occurred. Please try again." with "Retry" button
+
+### TC005: BS1 4DJ Retry Succeeds
+- **Type**: API Failure
+- **Precondition**: Complete TC004 first
+- **Steps**:
+  1. Click "Retry" button
+- **Expected**: Address "1 Bristol Broad Street" appears in dropdown
+
+### TC006: Empty Postcode Submit
+- **Type**: Negative
+- **Steps**:
+  1. Leave postcode input empty
+  2. Click "Lookup Address" button
+- **Expected**: No API call, input remains focused with cursor
+
+### TC007: Lowercase Postcode Normalization
+- **Type**: Edge
+- **Steps**:
+  1. Enter "sw1a 1aa" (lowercase)
+  2. Click "Lookup Address" button
+- **Expected**: Returns addresses (case normalized to uppercase)
+
+### TC008: Select Address from Dropdown
+- **Type**: Positive
+- **Precondition**: Complete TC001 first
+- **Steps**:
+  1. Click on first address in dropdown
+- **Expected**: 
+  - Address highlighted (blue background)
+  - "Continue" button becomes enabled
+
+### TC009: Manual Address Entry
+- **Type**: Positive  
+- **Precondition**: Complete TC002 first
+- **Steps**:
+  1. Enter "123 Test Street, London" in manual address field
+  2. Click "Continue" button
+- **Expected**: Navigate to Step 2
+
+### TC010: Proceed Without Address
+- **Type**: Negative
+- **Steps**:
+  1. Enter valid postcode (e.g., SW1A 1AA)
+  2. Click Lookup
+  3. Click Continue WITHOUT selecting address
+- **Expected**: Button remains disabled, cannot proceed
 
 ---
 
 ## 2. Waste Type Selection Tests (Step 2)
 
-| ID    | Test Case                                   | Type             | Expected Result                                            |
-| ----- | ------------------------------------------- | ---------------- | ---------------------------------------------------------- |
-| TC013 | Select "General Waste"                      | Positive         | Enable Continue button                                     |
-| TC014 | Select "Heavy Waste"                        | Positive         | Enable Continue button, no extra options shown             |
-| TC015 | Select "Plasterboard"                       | Branching        | Show plasterboard handling options (Separate/Mixed/Bagged) |
-| TC016 | Select Plasterboard without choosing option | Negative         | Continue button remains disabled                           |
-| TC017 | Select Plasterboard + "Separate"            | Positive         | Enable Continue button                                     |
-| TC018 | Select Plasterboard + "Mixed"               | Positive         | Enable Continue button                                     |
-| TC019 | Select Plasterboard + "Bagged"              | Positive         | Enable Continue button                                     |
-| TC020 | Switch from Plasterboard to General Waste   | State Transition | Hide plasterboard options, enable Continue                 |
-| TC021 | Click Continue with General Waste selected  | State Transition | Navigate to Step 3                                         |
-| TC022 | Click Back from Step 2                      | State Transition | Return to Step 1 with previous selections preserved        |
+### TC011: Select General Waste
+- **Type**: Positive
+- **Steps**:
+  1. Complete Step 1 with any valid postcode
+  2. Click "General Waste" option
+- **Expected**: 
+  - "General Waste" highlighted
+  - "Continue" button enabled
+
+### TC012: Select Heavy Waste
+- **Type**: Positive
+- **Steps**:
+  1. Click "Heavy Waste" option
+- **Expected**:
+  - "Heavy Waste" highlighted
+  - No extra options shown
+  - "Continue" button enabled
+
+### TC013: Select Plasterboard (Shows Branching)
+- **Type**: Branching
+- **Steps**:
+  1. Click "Plasterboard" option
+- **Expected**:
+  - "Plasterboard" highlighted
+  - New options appear: "Separate", "Mixed", "Bagged"
+  - "Continue" button DISABLED
+
+### TC014: Plasterboard + Separate Option
+- **Type**: Positive (Branching)
+- **Precondition**: Complete TC013
+- **Steps**:
+  1. Click "Separate" radio button
+- **Expected**: "Continue" button enabled
+
+### TC015: Plasterboard Without Option
+- **Type**: Negative (Branching)
+- **Precondition**: Complete TC013
+- **Steps**:
+  1. Click "Plasterboard" but do NOT select any option
+  2. Click "Continue" button
+- **Expected**: Cannot proceed, button disabled
+
+### TC016: Switch Waste Type After Selection
+- **Type**: State Transition
+- **Steps**:
+  1. Select "Plasterboard" + "Separate"
+  2. Click "Continue" to go to Step 3
+  3. Click "Back" to return to Step 2
+  4. Change to "General Waste"
+- **Expected**: 
+  - Plasterboard options hidden
+  - Continue button enabled
 
 ---
 
 ## 3. Skip Selection Tests (Step 3)
 
-| ID    | Test Case                                          | Type             | Expected Result                             |
-| ----- | -------------------------------------------------- | ---------------- | ------------------------------------------- |
-| TC023 | Select General Waste, verify all skips enabled     | Positive         | All 8 skip options are clickable            |
-| TC024 | Select Heavy Waste, verify large skips disabled    | Branching        | 8-yard and above show "Not Available"       |
-| TC025 | Select Plasterboard, verify medium skips disabled  | Branching        | 14-yard and above show "Not Available"      |
-| TC026 | Click on disabled skip (Heavy Waste path)          | Negative         | No selection, skip remains disabled         |
-| TC027 | Select an enabled skip                             | Positive         | Highlight selected skip, enable Continue    |
-| TC028 | Click Continue without selecting skip              | Negative         | Continue button remains disabled            |
-| TC029 | Change waste type from Step 3 (back and re-select) | State Transition | Skip options update based on new waste type |
-| TC030 | Verify skip prices are displayed                   | Positive         | Each skip shows price (e.g., "£120")        |
+### TC017: General Waste - All Skips Enabled
+- **Type**: Positive
+- **Steps**:
+  1. Select "General Waste" in Step 2
+  2. Click Continue
+  3. Observe all skip options
+- **Expected**: All 8 skips (4-yard to 20-yard) are clickable, none show "Not Available"
+
+### TC018: Heavy Waste - Large Skips Disabled
+- **Type**: Branching
+- **Steps**:
+  1. Select "Heavy Waste" in Step 2
+  2. Click Continue
+- **Expected**: 
+  - 8-yard, 10-yard, 12-yard, 14-yard, 16-yard, 20-yard show "Not Available"
+  - 4-yard and 6-yard are clickable
+
+### TC019: Plasterboard - Medium Skips Disabled
+- **Type**: Branching
+- **Steps**:
+  1. Select "Plasterboard" + "Separate"
+  2. Click Continue
+- **Expected**:
+  - 14-yard, 16-yard, 20-yard show "Not Available"
+
+### TC020: Click Disabled Skip (Bug Verification)
+- **Type**: Negative
+- **Steps**:
+  1. Select "Heavy Waste"
+  2. Click Continue
+  3. Try to click on "8-yard" skip
+- **Expected**: No click response, skip remains disabled
+
+### TC021: Select Enabled Skip
+- **Type**: Positive
+- **Steps**:
+  1. Click on "4-yard" skip
+- **Expected**:
+  - Skip highlighted with blue border/background
+  - "Continue" button enabled
+
+### TC022: Proceed Without Skip
+- **Type**: Negative
+- **Steps**:
+  1. Don't select any skip
+  2. Click "Continue to Review"
+- **Expected**: Button remains disabled
 
 ---
 
 ## 4. Review & Confirmation Tests (Step 4)
 
-| ID    | Test Case                                 | Type             | Expected Result                                         |
-| ----- | ----------------------------------------- | ---------------- | ------------------------------------------------------- |
-| TC031 | Complete flow to Review step              | Positive         | Display postcode, address, waste type, skip size        |
-| TC032 | Verify price breakdown shows              | Positive         | Show Skip Rental, VAT (20%), and Total                  |
-| TC033 | Verify total calculates correctly         | Positive         | Total = Price + VAT                                     |
-| TC034 | Click Confirm Booking                     | Positive         | Show loading, then success with Booking ID              |
-| TC035 | Double-click Confirm button               | Negative         | Button disabled during submission, no duplicate booking |
-| TC036 | Click Back from Review                    | State Transition | Return to Step 3 with selection preserved               |
-| TC037 | Verify "Make Another Booking" resets form | Positive         | Return to Step 1 with empty fields                      |
+### TC023: Review Displays All Data
+- **Type**: Positive
+- **Steps**:
+  1. Complete all previous steps
+  2. Reach Review step
+- **Expected**: Shows:
+  - Postcode (e.g., "SW1A 1AA")
+  - Address (e.g., "10 Downing Street, London")
+  - Waste Type (e.g., "General Waste")
+  - Skip Size (e.g., "4-yard")
+
+### TC024: Price Breakdown
+- **Type**: Positive
+- **Steps**:
+  1. Observe Review section
+- **Expected**: Shows:
+  - Skip Rental: £120
+  - VAT (20%): £24.00
+  - Total: £144.00
+
+### TC025: Confirm Booking
+- **Type**: Positive
+- **Steps**:
+  1. Click "Confirm Booking" button
+- **Expected**:
+  - Button changes to "Processing..."
+  - Button becomes disabled
+  - Success screen appears with Booking ID (e.g., "BK-ABC123")
+
+### TC026: Double Click Confirm (Bug TC001)
+- **Type**: Negative (Bug Test)
+- **Steps**:
+  1. Click "Confirm Booking"
+  2. IMMEDIATELY click again within 1 second
+- **Expected (Current Bug)**: 
+  - Multiple requests sent
+  - Multiple booking IDs generated
+- **Expected (Fixed)**: Button disabled immediately, no duplicate
+
+### TC027: Back Navigation Preserves Data
+- **Type**: State Transition
+- **Steps**:
+  1. Complete flow to Review
+  2. Click "Back" button
+- **Expected**: Returns to Step 3 with skip selection preserved
+
+### TC028: Make Another Booking Reset
+- **Type**: Positive
+- **Steps**:
+  1. Complete booking
+  2. Click "Make Another Booking"
+- **Expected**: Form resets to Step 1 with empty fields
 
 ---
 
-## 5. Edge Cases
+## 5. Bug-Specific Test Cases
 
-| ID    | Test Case                                  | Type        | Expected Result                               |
-| ----- | ------------------------------------------ | ----------- | --------------------------------------------- |
-| TC038 | Refresh page mid-flow                      | Edge        | Form resets to Step 1                         |
-| TC039 | Enter very long postcode string            | Edge        | Input handles gracefully, truncates if needed |
-| TC040 | Network timeout on skip load               | API Failure | Show error with retry option                  |
-| TC041 | Verify mobile responsiveness               | Edge        | Form usable on 375px width viewport           |
-| TC042 | Tab navigation through form                | Edge        | Logical focus order between fields            |
-| TC043 | Enter special characters in manual address | Edge        | Accept and display correctly                  |
+### BUG-001: Double Submit Race Condition
+- **Steps**:
+  1. Complete all steps to Review
+  2. Click Confirm
+  3. Click again within 500ms-1000ms
+  4. Check Network tab
+- **Expected**: Multiple POST /api/booking/confirm requests
 
----
+### BUG-002: BS1 4DJ Error State
+- **Steps**:
+  1. Enter "BS1 4DJ"
+  2. Click Lookup (expect 500 error)
+  3. Click Retry (expect success)
+  4. Refresh page
+  5. Enter "BS1 4DJ" again
+  6. Click Lookup
+- **Expected (Bug)**: First lookup succeeds
+- **Expected (Fixed)**: First lookup fails with 500
 
-## 6. State Transition Summary
-
-| ID    | From Step | To Step  | Trigger                           | Expected                          |
-| ----- | --------- | -------- | --------------------------------- | --------------------------------- |
-| ST001 | 1         | 2        | Valid postcode + address selected | Step 2 visible                    |
-| ST002 | 2         | 3        | Valid waste type selected         | Skips load based on waste type    |
-| ST003 | 3         | 4        | Skip selected                     | Review shows all data             |
-| ST004 | 4         | Success  | Confirm Booking                   | Success card with Booking ID      |
-| ST005 | Any       | Previous | Back button                       | Previous step with data preserved |
+### BUG-004: Skip Selection Stale Data
+- **Steps**:
+  1. Select General Waste → 4-yard (£120)
+  2. Continue to Step 3
+  3. Back to Step 2
+  4. Change to Heavy Waste
+  5. Continue to Step 3
+- **Expected (Bug)**: 
+  - 4-yard appears selected (has "selected" class)
+  - Continue button enabled
+  - Wrong price displayed
+- **Expected (Fixed)**: 
+  - No skip selected
+  - Continue button disabled
 
 ---
 
 ## Test Summary
 
-| Category               | Count  |
-| ---------------------- | ------ |
-| Positive Tests         | 18     |
-| Negative Tests         | 10     |
-| Edge Cases             | 6      |
-| API Failure Tests      | 4      |
-| State Transition Tests | 5      |
-| Branching Logic Tests  | 4      |
-| **Total**              | **43** |
+| Category | Count |
+|----------|-------|
+| Positive | 18 |
+| Negative | 10 |
+| Edge Cases | 6 |
+| API Failure | 4 |
+| State Transition | 5 |
+| Branching Logic | 4 |
+| **Total** | **47** |
 
 ---
 
 ## Execution Log
 
-| Date       | Tester | Status  | Notes |
-| ---------- | ------ | ------- | ----- |
-| 2024-04-15 | QA     | Pending | -     |
+| Date | Tester | Status | Notes |
+|------|--------|--------|-------|
+| 2024-04-15 | QA | Pending | - |
