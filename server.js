@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
+const path = require("node:path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -69,7 +69,7 @@ const skipFixtures = {
 };
 
 function normalizePostcode(postcode) {
-  return postcode.replace(/\s/g, "").toUpperCase();
+  return postcode.replaceAll(/\s/g, "").toUpperCase();
 }
 
 function delay(ms) {
