@@ -172,6 +172,8 @@ After workflow completes, check **Actions** tab → **Artifacts**
 |------|---------|
 | `.github/workflows/playwright.yml` | Playwright workflow |
 | `.github/workflows/newman.yml` | Newman workflow |
+| `.github/workflows/sonar.yml` | SonarQube static analysis |
+| `sonar-project.properties` | SonarQube configuration |
 
 ---
 
@@ -269,3 +271,75 @@ npm start
 # Then run tests
 newman run API/collection.json --environment API/environment.json
 ```
+
+---
+
+## SonarQube Static Analysis
+
+### What is SonarQube?
+SonarQube is a code quality and security tool that performs static analysis on your code to:
+- **Detect Bugs** - Find potential bugs and issues
+- **Code Smells** - Identify code that is hard to maintain
+- **Security Vulnerabilities** - Highlight security risks
+- **Coverage** - Track test coverage (when configured)
+- **Technical Debt** - Measure how much technical debt exists
+
+### When is SonarQube Triggered?
+SonarQube runs automatically on:
+1. **Every Push** to the repository
+2. **Every Pull Request** to any branch
+
+### Workflow Location
+`.github/workflows/sonar.yml`
+
+```yaml
+name: SonarQube Static Analysis
+
+on: [push, pull_request]
+
+jobs:
+  sonarqube:
+    name: SonarQube
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_QUABE }}
+```
+
+### SonarQube Configuration
+File: `sonar-project.properties`
+
+```properties
+sonar.projectKey=youssefdiaa12_Skip_Booking_Flow
+sonar.organization=youssefdiaa12
+
+sonar.sources=.
+sonar.exclusions=node_modules/**,dist/**,test-results/**
+sonar.sourceEncoding=UTF-8
+```
+
+### What Gets Analyzed
+| Language | Analyzer Used |
+|----------|---------------|
+| JavaScript/TypeScript | SonarJS |
+| HTML/CSS | Web backend |
+
+### Files Excluded from Analysis
+- `node_modules/` - Dependencies
+- `dist/` - Build outputs
+- `test-results/` - Test reports
+
+### Viewing SonarQube Results
+1. Go to SonarQube cloud dashboard: https://sonarsource.com
+2. Or configure local SonarQube instance
+3. View Quality Gates, Bugs, Code Smells
+
+### Benefits of SonarQube in CI/CD
+- **Early Detection** - Find issues before production
+- **Quality Gates** - Block commits that降低 quality
+- **Historical Tracking** - See quality trends over time
+- **Security Scanning** - Detect vulnerabilities automatically
+- **Technical Debt Metrics** - Measure codebase maintainability
